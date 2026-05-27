@@ -34,5 +34,3 @@ $ pip install {{ cookiecutter.project_slug }}
 ## Features
 
 * TODO
-
-[JNevrly/cookiecutter-pypackage-poetry](https://github.com/JNevrly/cookiecutter-pypackage-poetry)
