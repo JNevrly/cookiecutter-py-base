@@ -1,0 +1,4 @@
+cookiecutter>=2.6.0
+pytest>=8.0.0
+pytest-cookies>=0.7.0
+tox>=4.0.0

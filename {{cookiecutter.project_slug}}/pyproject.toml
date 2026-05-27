@@ -1,0 +1,77 @@
+[project]
+name = "{{ cookiecutter.project_slug }}"
+version = "{{ cookiecutter.version }}"
+description = "{{ cookiecutter.project_short_description }}"
+authors = [
+    { name = "{{ cookiecutter.full_name }}", email = "{{ cookiecutter.email }}" }
+]
+license = { text = "{{ cookiecutter.open_source_license }}" }
+readme = "README.md"
+requires-python = ">={{ cookiecutter.python_version }}"
+dynamic = ["dependencies", "classifiers"]
+
+[project.urls]
+Homepage = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
+Repository = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
+
+{% if cookiecutter.command_line_interface|lower == 'click' %}
+[project.scripts]
+{{ cookiecutter.project_slug }} = "{{ cookiecutter.project_slug }}.cli:main"
+{% endif %}
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+packages = [
+    { include = "{{ cookiecutter.project_slug }}" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    {% if cookiecutter.python_version == "3.11" %}
+    "Programming Language :: Python :: 3.11",
+    {% endif %}
+    {% if cookiecutter.python_version in ["3.11", "3.12"] %}
+    "Programming Language :: Python :: 3.12",
+    {% endif %}
+    "Programming Language :: Python :: 3.13",
+]
+
+[tool.poetry.dependencies]
+{% if cookiecutter.command_line_interface|lower == 'click' %}
+click = "^8.1.7"
+{% endif %}
+{% if cookiecutter.use_onacol == "y" %}
+onacol = "^0.3.5"
+{% endif %}
+
+[tool.poetry.group.dev.dependencies]
+tox = "^4.34.0"
+coverage = {extras = ["toml"], version = "^7.4"}
+ruff = "^0.14.0"
+{% if cookiecutter.use_pytest == "y" %}
+pytest = "^9.0"
+pytest-cov = "^4.1"
+{% endif %}
+mypy = "^1.19"
+
+[tool.coverage.run]
+omit = [".*", "*/site-packages/*"]
+source = ["{{ cookiecutter.project_slug }}"]
+relative_files = true
+
+[tool.coverage.report]
+fail_under = 100
+
+[tool.ruff]
+line-length = 88
+target-version = "py{{ cookiecutter.python_version | replace('.', '') }}"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = []
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

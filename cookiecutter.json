@@ -1,0 +1,18 @@
+{
+  "full_name": "Josef Nevrly",
+  "email": "josef.nevrly@gmail.com",
+  "github_username": "JNevrly",
+  "project_name": "Python Boilerplate",
+  "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '_').replace('-', '_') }}",
+  "project_short_description": "Python Boilerplate contains all the boilerplate you need to create a Python package.",
+  "pypi_username": "{{ cookiecutter.github_username }}",
+  "version": "0.1.0",
+  "python_version": ["3.13", "3.12", "3.11"],
+  "use_devcontainer": "y",
+  "use_pytest": "y",
+  "ci_tool": ["None", "GitHub", "GitLab"],
+  "add_pyup_badge": "n",
+  "command_line_interface": ["Click", "No command-line interface"],
+  "use_onacol": "y",
+  "open_source_license": ["MIT license", "BSD license", "ISC license", "Apache Software License 2.0", "GNU General Public License v3", "Not open source"]
+}
