@@ -1,6 +1,8 @@
 # cookiecutter-py-base
 
-A small Cookiecutter template for Poetry-managed Python packages.
+A small Cookiecutter template for Poetry-managed Python packages. 
+
+A fork of https://github.com/audreyfeldroy/cookiecutter-pypackage 
 
 ## Features
 
@@ -22,7 +24,7 @@ pip install -U cookiecutter
 Generate a project from this template:
 
 ```bash
-cookiecutter https://github.com/wboxx1/cookiecutter-py-base.git
+cookiecutter https://github.com/JNevrly/cookiecutter-py-base.git
 ```
 
 Then install dependencies in the generated project:
