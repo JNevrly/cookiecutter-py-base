@@ -2,16 +2,17 @@ image: python:{{ cookiecutter.python_version }}
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
 
 cache:
   paths:
-    - .cache/pip
+    - .cache/pip/
+    - .cache/uv/
     - .venv/
 
 before_script:
-  - pip install poetry
-  - poetry config virtualenvs.in-project true
-  - poetry install -vv
+  - pip install uv
+  - uv sync --group dev
 
 stages:
   - test
@@ -21,18 +22,19 @@ stages:
 test:
   stage: test
   script:
-    - poetry run pytest --cov={{ cookiecutter.project_slug }} tests/
+    - uv run pytest --cov={{ cookiecutter.project_slug }} tests/
 
 lint:
   stage: lint
   script:
-    - poetry run ruff check .
-    - poetry run ruff format --check .
-    - poetry run mypy {{ cookiecutter.project_slug }}
+    - uv run ruff check .
+    - uv run ruff format --check .
+    - uv run mypy {{ cookiecutter.project_slug }}
 
 deploy:
   stage: deploy
   script:
-    - poetry publish --build -u $PYPI_USERNAME -p $PYPI_PASSWORD
+    - uv build
+    - uv publish dist/* --username $PYPI_USERNAME --password $PYPI_PASSWORD
   only:
     - tags

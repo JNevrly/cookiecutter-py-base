@@ -8,22 +8,6 @@ authors = [
 license = { text = "{{ cookiecutter.open_source_license }}" }
 readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
-dynamic = ["dependencies", "classifiers"]
-
-[project.urls]
-Homepage = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
-Repository = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
-
-{% if cookiecutter.command_line_interface|lower == 'click' %}
-[project.scripts]
-{{ cookiecutter.project_slug }} = "{{ cookiecutter.project_slug }}.cli:main"
-{% endif %}
-
-[tool.poetry]
-requires-poetry = ">=2.0"
-packages = [
-    { include = "{{ cookiecutter.project_slug }}" },
-]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
@@ -37,24 +21,35 @@ classifiers = [
     {% endif %}
     "Programming Language :: Python :: 3.13",
 ]
+dependencies = [
+    {% if cookiecutter.command_line_interface|lower == 'click' %}
+    "click>=8.1.7,<9.0.0",
+    {% endif %}
+    {% if cookiecutter.use_onacol == "y" %}
+    "onacol>=0.3.5,<0.4.0",
+    {% endif %}
+]
 
-[tool.poetry.dependencies]
+[project.urls]
+Homepage = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
+Repository = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}"
+
 {% if cookiecutter.command_line_interface|lower == 'click' %}
-click = "^8.1.7"
-{% endif %}
-{% if cookiecutter.use_onacol == "y" %}
-onacol = "^0.3.5"
+[project.scripts]
+{{ cookiecutter.project_slug }} = "{{ cookiecutter.project_slug }}.cli:main"
 {% endif %}
 
-[tool.poetry.group.dev.dependencies]
-tox = "^4.34.0"
-coverage = {extras = ["toml"], version = "^7.4"}
-ruff = "^0.14.0"
+[dependency-groups]
+dev = [
+    "tox>=4.34.0,<5.0.0",
+    "coverage[toml]>=7.4,<8.0.0",
+    "ruff>=0.14.0,<0.15.0",
 {% if cookiecutter.use_pytest == "y" %}
-pytest = "^9.0"
-pytest-cov = "^4.1"
+    "pytest>=9.0,<10.0.0",
+    "pytest-cov>=4.1,<5.0.0",
 {% endif %}
-mypy = "^1.19"
+    "mypy>=1.19,<2.0.0",
+]
 
 [tool.coverage.run]
 omit = [".*", "*/site-packages/*"]
@@ -73,5 +68,8 @@ select = ["E", "F", "I", "B"]
 ignore = []
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["{{ cookiecutter.project_slug }}"]

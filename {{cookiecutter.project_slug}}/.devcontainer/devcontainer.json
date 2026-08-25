@@ -20,5 +20,5 @@
         "source=${localEnv:HOME}/.config/opencode,target=/root/.config/opencode,type=bind,consistency=cached",
         "source=${localEnv:HOME}/.local/share/opencode,target=/root/.local/share/opencode,type=bind,consistency=cached"
     ],
-    "postCreateCommand": "poetry install"
+    "postCreateCommand": "uv sync --group dev"
 }

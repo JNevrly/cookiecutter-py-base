@@ -54,6 +54,29 @@ def test_default_python_version(cookies):
         assert "Programming Language :: Python :: 3.12" not in pyproject
         assert "Programming Language :: Python :: 3.10" not in pyproject
         assert "py313" in tox
+        assert "uv sync --group dev" in tox
+        assert "uv run pytest" in tox
+
+
+def test_pyproject_uses_uv_and_hatchling(cookies):
+    with bake_in_temp_dir(cookies) as result:
+        pyproject = result.project.join("pyproject.toml").read()
+
+        assert "[tool.poetry]" not in pyproject
+        assert "poetry.core.masonry.api" not in pyproject
+        assert "dynamic = [\"dependencies\", \"classifiers\"]" not in pyproject
+        assert "[dependency-groups]" in pyproject
+        assert 'requires = ["hatchling>=1.27.0"]' in pyproject
+        assert 'build-backend = "hatchling.build"' in pyproject
+        assert "[tool.hatch.build.targets.wheel]" in pyproject
+        assert 'click>=8.1.7,<9.0.0' in pyproject
+        assert 'onacol>=0.3.5,<0.4.0' in pyproject
+        assert 'tox>=4.34.0,<5.0.0' in pyproject
+        assert 'coverage[toml]>=7.4,<8.0.0' in pyproject
+        assert 'ruff>=0.14.0,<0.15.0' in pyproject
+        assert 'pytest>=9.0,<10.0.0' in pyproject
+        assert 'pytest-cov>=4.1,<5.0.0' in pyproject
+        assert 'mypy>=1.19,<2.0.0' in pyproject
 
 
 def test_no_classic_aiohttp_setup(cookies):
@@ -77,10 +100,15 @@ def test_no_bumpversion_config(cookies):
 def test_devcontainer_opencode(cookies):
     with bake_in_temp_dir(cookies, extra_context={"use_devcontainer": "y"}) as result:
         devcontainer = result.project.join(".devcontainer/devcontainer.json").read()
+        dockerfile = result.project.join(".devcontainer/Dockerfile").read()
 
         assert "sst-dev.opencode" in devcontainer
         assert ".config/opencode" in devcontainer
         assert ".local/share/opencode" in devcontainer
+        assert "uv sync --group dev" in devcontainer
+        assert "poetry" not in devcontainer.lower()
+        assert "pip install uv" in dockerfile
+        assert "poetry" not in dockerfile.lower()
 
 
 def test_no_devcontainer_by_default(cookies):
