@@ -8,5 +8,13 @@ RUN apt-get update \
 # Install uv
 RUN pip install uv
 
+{% if cookiecutter.use_backlog == "y" %}
+# Install Backlog.md
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nodejs npm \
+    && npm install -g backlog.md \
+    && rm -rf /var/lib/apt/lists/*
+
+{% endif %}
 # Install OpenCode CLI
 RUN curl -fsSL https://opencode.ai/install | bash

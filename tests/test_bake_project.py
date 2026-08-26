@@ -1,6 +1,10 @@
 import datetime
+import json
 import os
+import stat
+import sys
 from contextlib import contextmanager
+from pathlib import Path
 
 from cookiecutter.utils import rmtree
 
@@ -24,6 +28,58 @@ def project_files(result):
     return {item.basename for item in project_dir.listdir()}
 
 
+def write_fake_command(command_dir, name, source):
+    command_dir = Path(command_dir)
+    if os.name == "nt":
+        script = command_dir / "{}.py".format(name)
+        script.write_text(source)
+        command = command_dir / "{}.bat".format(name)
+        command.write_text('@"{}" "%~dp0{}.py" %*\n'.format(sys.executable, name))
+    else:
+        command = command_dir / name
+        command.write_text("#!{}\n{}".format(sys.executable, source))
+        command.chmod(command.stat().st_mode | stat.S_IXUSR)
+
+
+def fake_backlog_commands(tmp_path, monkeypatch):
+    command_dir = tmp_path / "commands"
+    command_dir.mkdir()
+    command_log = tmp_path / "commands.jsonl"
+    monkeypatch.setenv("BACKLOG_COMMAND_LOG", str(command_log))
+    monkeypatch.setenv("PATH", "{}{}{}".format(command_dir, os.pathsep, os.environ.get("PATH", "")))
+
+    write_fake_command(
+        command_dir,
+        "git",
+        """import json
+import os
+import sys
+from pathlib import Path
+
+with Path(os.environ["BACKLOG_COMMAND_LOG"]).open("a") as log:
+    log.write(json.dumps(["git", *sys.argv[1:]]) + "\\n")
+Path(".git").mkdir(exist_ok=True)
+""",
+    )
+    write_fake_command(
+        command_dir,
+        "backlog",
+        """import json
+import os
+import sys
+from pathlib import Path
+
+with Path(os.environ["BACKLOG_COMMAND_LOG"]).open("a") as log:
+    log.write(json.dumps(["backlog", *sys.argv[1:]]) + "\\n")
+Path("backlog").mkdir(exist_ok=True)
+Path("backlog/config.yml").write_text("generated config\\n")
+with Path("AGENTS.md").open("a") as agents:
+    agents.write("\\nBacklog.md instructions\\n")
+""",
+    )
+    return command_log
+
+
 def test_bake_with_defaults(cookies):
     with bake_in_temp_dir(cookies) as result:
         assert result.project.isdir()
@@ -35,6 +91,8 @@ def test_bake_with_defaults(cookies):
         assert "README.md" in files
         assert "tox.ini" in files
         assert "tests" in files
+        assert "AGENTS.md" in files
+        assert result.project.join("AGENTS.md").read() == ""
 
         assert "docs" not in files
         assert "Makefile" not in files
@@ -109,11 +167,120 @@ def test_devcontainer_opencode(cookies):
         assert "poetry" not in devcontainer.lower()
         assert "pip install uv" in dockerfile
         assert "poetry" not in dockerfile.lower()
+        assert "nodejs npm" not in dockerfile
+        assert "npm install -g backlog.md" not in dockerfile
 
 
 def test_no_devcontainer_by_default(cookies):
     with bake_in_temp_dir(cookies) as result:
         assert ".devcontainer" not in top_level_files(result)
+
+
+def test_bake_without_backlog_by_default(cookies):
+    with bake_in_temp_dir(cookies) as result:
+        files = top_level_files(result)
+
+        assert "backlog" not in files
+        assert ".backlog-config.yml" not in files
+
+
+def test_bake_with_backlog(cookies, tmp_path, monkeypatch):
+    command_log = fake_backlog_commands(tmp_path, monkeypatch)
+
+    with bake_in_temp_dir(cookies, extra_context={"use_backlog": "y"}) as result:
+        expected_config = """project_name: "Python Boilerplate"
+default_status: "To Do"
+statuses: ["To Do", "In Progress", "Done"]
+labels: []
+definition_of_done: []
+date_format: yyyy-mm-dd
+max_column_width: 20
+auto_open_browser: false
+default_port: 6420
+remote_operations: false
+auto_commit: false
+filesystem_only: false
+zero_padded_ids: 3
+bypass_git_hooks: true
+check_active_branches: false
+active_branch_days: 30
+task_prefix: "task"
+"""
+        commands = [json.loads(line) for line in command_log.read_text().splitlines()]
+
+        assert result.project.join(".git").isdir()
+        assert result.project.join("backlog/config.yml").read() == expected_config
+        agents = result.project.join("AGENTS.md").read()
+        assert "## Backlog.md workflow" in agents
+        assert "Only the human may accept a task as complete." in agents
+        assert "Do not create or use Backlog.md decision records." in agents
+        assert "Backlog.md instructions" in agents
+        assert ".backlog-config.yml" not in top_level_files(result)
+        assert ["git", "init"] in commands
+        assert [
+            "backlog",
+            "init",
+            "Python Boilerplate",
+            "--defaults",
+            "--backlog-dir",
+            "backlog",
+            "--config-location",
+            "folder",
+            "--task-prefix",
+            "task",
+            "--zero-padded-ids",
+            "3",
+            "--check-branches",
+            "false",
+            "--include-remote",
+            "false",
+            "--branch-days",
+            "30",
+            "--bypass-git-hooks",
+            "true",
+            "--web-port",
+            "6420",
+            "--auto-open-browser",
+            "false",
+            "--integration-mode",
+            "cli",
+            "--agent-instructions",
+            "agents",
+        ] in commands
+        assert "TASK-001" in result.project.join("README.md").read()
+
+
+def test_bake_with_backlog_requires_backlog_command(cookies, tmp_path, monkeypatch):
+    command_dir = tmp_path / "commands"
+    command_dir.mkdir()
+    command_log = tmp_path / "commands.jsonl"
+    monkeypatch.setenv("BACKLOG_COMMAND_LOG", str(command_log))
+    monkeypatch.setenv("PATH", str(command_dir))
+    write_fake_command(
+        command_dir,
+        "git",
+        """from pathlib import Path
+Path(".git").mkdir(exist_ok=True)
+""",
+    )
+
+    with bake_in_temp_dir(cookies, extra_context={"use_backlog": "y"}) as result:
+        assert result.exit_code == 1
+        assert "requires 'backlog'" in str(result.exception)
+        assert not result.project.join(".git").exists()
+
+
+def test_backlog_devcontainer_installs_backlog(cookies, tmp_path, monkeypatch):
+    fake_backlog_commands(tmp_path, monkeypatch)
+
+    with bake_in_temp_dir(
+        cookies,
+        extra_context={"use_backlog": "y", "use_devcontainer": "y"},
+    ) as result:
+        dockerfile = result.project.join(".devcontainer/Dockerfile").read()
+
+        assert "nodejs npm" in dockerfile
+        assert "npm install -g backlog.md" in dockerfile
 
 
 def test_bake_selecting_license(cookies):

@@ -12,6 +12,7 @@ A fork of https://github.com/audreyfeldroy/cookiecutter-pypackage
 - Optional devcontainer with Python, uv, Ruff, and OpenCode extensions
 - Optional pytest and Click setup
 - Command line interface using Click (optional)
+- Optional Backlog.md task management, initialized with Git and a standard project configuration
 
 ## Quickstart
 
@@ -34,3 +35,18 @@ Then install dependencies in the generated project:
 ```bash
 uv sync --group dev
 ```
+
+## Backlog.md
+
+Selecting Backlog.md during generation requires Git and the `backlog` command on
+the machine running Cookiecutter. Install it with:
+
+```bash
+npm install -g backlog.md
+```
+
+The generated project is initialized as a Git repository. Backlog.md stores its
+configuration in `backlog/config.yml` and tasks in `backlog/tasks/`. Task IDs
+use the `TASK-001` format and task filenames use `task-001 - Title.md`.
+Generated devcontainers also install Backlog.md. Every generated project has
+an `AGENTS.md`; it contains the Backlog.md workflow when Backlog.md is selected.
