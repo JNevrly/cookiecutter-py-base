@@ -38,15 +38,17 @@ uv sync --group dev
 
 ## Backlog.md
 
-Selecting Backlog.md during generation requires Git and the `backlog` command on
-the machine running Cookiecutter. Install it with:
+Selecting Backlog.md without a devcontainer requires Git and the `backlog`
+command on the machine running Cookiecutter. Install it with:
 
 ```bash
 npm install -g backlog.md
 ```
 
-The generated project is initialized as a Git repository. Backlog.md stores its
+After initialization, the project is a Git repository. Backlog.md stores its
 configuration in `backlog/config.yml` and tasks in `backlog/tasks/`. Task IDs
 use the `TASK-001` format and task filenames use `task-001 - Title.md`.
-Generated devcontainers also install Backlog.md. Every generated project has
-an `AGENTS.md`; it contains the Backlog.md workflow when Backlog.md is selected.
+Generated devcontainers install and initialize Backlog.md when the container is
+first created, so the host does not need Git or Backlog.md. Every generated
+project has an `AGENTS.md`; it contains the Backlog.md workflow when Backlog.md
+is selected.

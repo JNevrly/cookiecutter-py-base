@@ -270,17 +270,30 @@ Path(".git").mkdir(exist_ok=True)
         assert not result.project.join(".git").exists()
 
 
-def test_backlog_devcontainer_installs_backlog(cookies, tmp_path, monkeypatch):
-    fake_backlog_commands(tmp_path, monkeypatch)
+def test_backlog_devcontainer_defers_initialization(cookies, tmp_path, monkeypatch):
+    command_dir = tmp_path / "commands"
+    command_dir.mkdir()
+    monkeypatch.setenv("PATH", str(command_dir))
 
     with bake_in_temp_dir(
         cookies,
         extra_context={"use_backlog": "y", "use_devcontainer": "y"},
     ) as result:
         dockerfile = result.project.join(".devcontainer/Dockerfile").read()
+        devcontainer = result.project.join(".devcontainer/devcontainer.json").read()
 
+        assert result.exit_code == 0
+        assert result.exception is None
+        assert result.project.join(".backlog-config.yml").isfile()
+        assert not result.project.join(".git").exists()
+        assert not result.project.join("backlog").exists()
         assert "nodejs npm" in dockerfile
         assert "npm install -g backlog.md" in dockerfile
+        assert "if [ -f .backlog-config.yml ]; then" in devcontainer
+        assert "git init" in devcontainer
+        assert "backlog init --defaults" in devcontainer
+        assert "mv .backlog-config.yml backlog/config.yml" in devcontainer
+        assert "uv sync --group dev" in devcontainer
 
 
 def test_bake_selecting_license(cookies):

@@ -115,7 +115,8 @@ if __name__ == "__main__":
         remove_file(config_file)
 
     if "{{ cookiecutter.use_backlog }}" == "y":
-        initialize_backlog()
+        if "{{ cookiecutter.use_devcontainer }}" == "n":
+            initialize_backlog()
     else:
         remove_file(BACKLOG_CONFIG_TEMPLATE)
 
