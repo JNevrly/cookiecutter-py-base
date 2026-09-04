@@ -155,7 +155,7 @@ def test_no_bumpversion_config(cookies):
         assert "bump-my-version" not in pyproject
 
 
-def test_devcontainer_opencode(cookies):
+def test_devcontainer_agents(cookies):
     with bake_in_temp_dir(cookies, extra_context={"use_devcontainer": "y"}) as result:
         devcontainer = result.project.join(".devcontainer/devcontainer.json").read()
         dockerfile = result.project.join(".devcontainer/Dockerfile").read()
@@ -163,9 +163,14 @@ def test_devcontainer_opencode(cookies):
         assert "sst-dev.opencode" in devcontainer
         assert ".config/opencode" in devcontainer
         assert ".local/share/opencode" in devcontainer
+        assert "anthropic.claude-code" in devcontainer
+        assert "source=${localEnv:HOME}/.claude,target=/root/.claude" in devcontainer
+        assert "source=${localEnv:HOME}/.claude.json,target=/root/.claude.json" in devcontainer
         assert "uv sync --group dev" in devcontainer
         assert "poetry" not in devcontainer.lower()
         assert "pip install uv" in dockerfile
+        assert "https://claude.ai/install.sh" in dockerfile
+        assert 'ENV PATH="/root/.local/bin:${PATH}"' in dockerfile
         assert "poetry" not in dockerfile.lower()
         assert "nodejs npm" not in dockerfile
         assert "npm install -g backlog.md" not in dockerfile

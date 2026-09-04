@@ -9,7 +9,7 @@ A fork of https://github.com/audreyfeldroy/cookiecutter-pypackage
 - uv dependency management with Hatchling build backend
 - Python 3.13 by default, with support for Python 3.11 and newer
 - GitHub Actions or GitLab CI configuration
-- Optional devcontainer with Python, uv, Ruff, and OpenCode extensions
+- Optional devcontainer with Python, uv, Ruff, OpenCode, and Claude Code extensions
 - Optional pytest and Click setup
 - Command line interface using Click (optional)
 - Optional Backlog.md task management, initialized with Git and a standard project configuration
