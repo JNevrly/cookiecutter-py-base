@@ -10,6 +10,7 @@ A fork of https://github.com/audreyfeldroy/cookiecutter-pypackage
 - Python 3.13 by default, with support for Python 3.11 and newer
 - GitHub Actions or GitLab CI configuration
 - Optional devcontainer with Python, uv, Ruff, OpenCode, and Claude Code extensions
+- Optional devcontainer connection to the local ALAP AsciiDoc builder
 - Optional pytest and Click setup
 - Command line interface using Click (optional)
 - Optional Backlog.md task management, initialized with Git and a standard project configuration
@@ -35,6 +36,34 @@ Then install dependencies in the generated project:
 ```bash
 uv sync --group dev
 ```
+
+## Local AsciiDoc builder
+
+Select `use_devcontainer=y` and `use_adoc_builder=y` to connect the generated
+devcontainer to an existing local ALAP builder. `use_adoc_builder` defaults to
+`n` and has no effect without a devcontainer.
+
+Before opening the devcontainer, run this on the Docker host from your local
+`adoc_alap_template` checkout:
+
+```bash
+docker compose up -d asciibuilder
+```
+
+This creates the shared `alap-asciibuilder` network. The devcontainer joins it and
+sets `ADOC_BUILDER_URL=http://asciibuilder:18743`. If the builder uses
+authentication, export the matching `ADOC_BUILDER_TOKEN` in the host environment
+before launching VS Code; the devcontainer forwards it by environment reference.
+
+Inside the devcontainer, check connectivity with:
+
+```bash
+curl --fail "$ADOC_BUILDER_URL/health"
+```
+
+The `adoc-build` client/agent skill uses these environment variables to build PDFs.
+The container-network port stays `18743` even if the builder's host-published
+port is customized. Rebuild the devcontainer after changing its configuration.
 
 ## Backlog.md
 

@@ -9,6 +9,7 @@
   "version": "0.1.0",
   "python_version": ["3.13", "3.12", "3.11"],
   "use_devcontainer": "y",
+  "use_adoc_builder": "n",
   "use_pytest": "y",
   "ci_tool": ["None", "GitHub", "GitLab"],
   "add_pyup_badge": "n",

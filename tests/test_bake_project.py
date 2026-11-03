@@ -6,6 +6,8 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
+from cookiecutter.exceptions import FailedHookException
 from cookiecutter.utils import rmtree
 
 
@@ -15,7 +17,8 @@ def bake_in_temp_dir(cookies, *args, **kwargs):
     try:
         yield result
     finally:
-        rmtree(str(result.project))
+        if result.project is not None and result.project.exists():
+            rmtree(str(result.project))
 
 
 def top_level_files(result):
@@ -174,11 +177,54 @@ def test_devcontainer_agents(cookies):
         assert "poetry" not in dockerfile.lower()
         assert "nodejs npm" not in dockerfile
         assert "npm install -g backlog.md" not in dockerfile
+        config = json.loads(devcontainer)
+        assert "runArgs" not in config
+        assert "containerEnv" not in config
 
 
-def test_no_devcontainer_by_default(cookies):
-    with bake_in_temp_dir(cookies) as result:
+@pytest.mark.parametrize("use_adoc_builder", ["n", "y"])
+@pytest.mark.parametrize("use_backlog", ["n", "y"])
+def test_devcontainer_adoc_builder(cookies, use_adoc_builder, use_backlog):
+    with bake_in_temp_dir(
+        cookies,
+        extra_context={
+            "use_devcontainer": "y",
+            "use_adoc_builder": use_adoc_builder,
+            "use_backlog": use_backlog,
+        },
+    ) as result:
+        assert result.exit_code == 0
+        assert result.exception is None
+        config = json.loads(result.project.join(".devcontainer/devcontainer.json").read())
+        readme = result.project.join("README.md").read()
+
+        if use_adoc_builder == "y":
+            assert config["runArgs"] == ["--network=alap-asciibuilder"]
+            assert config["containerEnv"] == {
+                "ADOC_BUILDER_URL": "http://asciibuilder:18743",
+                "ADOC_BUILDER_TOKEN": "${localEnv:ADOC_BUILDER_TOKEN}",
+            }
+            assert "## Local AsciiDoc builder" in readme
+            assert "docker compose up -d asciibuilder" in readme
+        else:
+            assert "runArgs" not in config
+            assert "containerEnv" not in config
+            assert "## Local AsciiDoc builder" not in readme
+
+        assert "uv sync --group dev" in config["postCreateCommand"]
+        assert ("backlog init" in config["postCreateCommand"]) == (use_backlog == "y")
+
+
+@pytest.mark.parametrize("use_adoc_builder", ["n", "y"])
+def test_bake_without_devcontainer(cookies, use_adoc_builder):
+    with bake_in_temp_dir(
+        cookies,
+        extra_context={"use_devcontainer": "n", "use_adoc_builder": use_adoc_builder},
+    ) as result:
+        assert result.exit_code == 0
+        assert result.exception is None
         assert ".devcontainer" not in top_level_files(result)
+        assert "## Local AsciiDoc builder" not in result.project.join("README.md").read()
 
 
 def test_bake_without_backlog_by_default(cookies):
@@ -192,7 +238,9 @@ def test_bake_without_backlog_by_default(cookies):
 def test_bake_with_backlog(cookies, tmp_path, monkeypatch):
     command_log = fake_backlog_commands(tmp_path, monkeypatch)
 
-    with bake_in_temp_dir(cookies, extra_context={"use_backlog": "y"}) as result:
+    with bake_in_temp_dir(
+        cookies, extra_context={"use_backlog": "y", "use_devcontainer": "n"}
+    ) as result:
         expected_config = """project_name: "Python Boilerplate"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
@@ -255,7 +303,7 @@ task_prefix: "task"
         assert "TASK-001" in result.project.join("README.md").read()
 
 
-def test_bake_with_backlog_requires_backlog_command(cookies, tmp_path, monkeypatch):
+def test_bake_with_backlog_requires_backlog_command(cookies, tmp_path, monkeypatch, capfd):
     command_dir = tmp_path / "commands"
     command_dir.mkdir()
     command_log = tmp_path / "commands.jsonl"
@@ -269,10 +317,14 @@ Path(".git").mkdir(exist_ok=True)
 """,
     )
 
-    with bake_in_temp_dir(cookies, extra_context={"use_backlog": "y"}) as result:
-        assert result.exit_code == 1
-        assert "requires 'backlog'" in str(result.exception)
-        assert not result.project.join(".git").exists()
+    with bake_in_temp_dir(
+        cookies, extra_context={"use_backlog": "y", "use_devcontainer": "n"}
+    ) as result:
+        assert result.exit_code != 0
+        assert isinstance(result.exception, FailedHookException)
+        assert "requires 'backlog'" in capfd.readouterr().err
+        assert result.project is None
+        assert not command_log.exists()
 
 
 def test_backlog_devcontainer_defers_initialization(cookies, tmp_path, monkeypatch):

@@ -35,6 +35,34 @@ $ pip install {{ cookiecutter.project_slug }}
 
 * TODO
 
+{% if cookiecutter.use_devcontainer == "y" and cookiecutter.use_adoc_builder == "y" %}
+## Local AsciiDoc builder
+
+The devcontainer connects to the existing local ALAP AsciiDoc builder. Before
+opening it in VS Code, start the builder on the Docker host from your local
+`adoc_alap_template` checkout:
+
+```bash
+docker compose up -d asciibuilder
+```
+
+This creates the required `alap-asciibuilder` network. If the builder uses
+authentication, export the matching `ADOC_BUILDER_TOKEN` in the host environment
+before launching VS Code; the devcontainer forwards it by environment reference.
+
+Inside the devcontainer, `ADOC_BUILDER_URL` is set to
+`http://asciibuilder:18743`. Check connectivity with:
+
+```bash
+curl --fail "$ADOC_BUILDER_URL/health"
+```
+
+Use the `adoc-build` client/agent skill to render PDFs with this endpoint and the
+optional token. The container-network port stays `18743` even if the builder's
+host-published port is customized. Rebuild the devcontainer after changing its
+configuration.
+{% endif %}
+
 {% if cookiecutter.use_backlog == "y" %}
 ## Task Management
 

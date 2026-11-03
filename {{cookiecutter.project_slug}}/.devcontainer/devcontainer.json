@@ -3,6 +3,13 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+{% if cookiecutter.use_adoc_builder == "y" -%}
+	"runArgs": ["--network=alap-asciibuilder"],
+	"containerEnv": {
+		"ADOC_BUILDER_URL": "http://asciibuilder:18743",
+		"ADOC_BUILDER_TOKEN": "${localEnv:ADOC_BUILDER_TOKEN}"
+	},
+{% endif -%}
 	"customizations": {
 		"vscode": {
 			"extensions": [
