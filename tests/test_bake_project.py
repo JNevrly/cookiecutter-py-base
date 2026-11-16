@@ -178,8 +178,30 @@ def test_devcontainer_agents(cookies):
         assert "nodejs npm" not in dockerfile
         assert "npm install -g backlog.md" not in dockerfile
         config = json.loads(devcontainer)
-        assert "runArgs" not in config
+        assert config["runArgs"] == ["--name=dev-python_boilerplate"]
         assert "containerEnv" not in config
+
+
+@pytest.mark.parametrize(
+    "project_slug,python_version",
+    [("python_boilerplate", "3.13"), ("my_project", "3.12")],
+)
+def test_devcontainer_naming(cookies, project_slug, python_version):
+    with bake_in_temp_dir(
+        cookies,
+        extra_context={
+            "use_devcontainer": "y",
+            "project_slug": project_slug,
+            "python_version": python_version,
+        },
+    ) as result:
+        assert result.exit_code == 0
+        assert result.exception is None
+        config = json.loads(result.project.join(".devcontainer/devcontainer.json").read())
+
+        assert config["name"] == "{} — Python {}".format(project_slug, python_version)
+        assert config["runArgs"] == ["--name=dev-{}".format(project_slug)]
+        assert config["build"] == {"dockerfile": "Dockerfile"}
 
 
 @pytest.mark.parametrize("use_adoc_builder", ["n", "y"])
@@ -199,7 +221,10 @@ def test_devcontainer_adoc_builder(cookies, use_adoc_builder, use_backlog):
         readme = result.project.join("README.md").read()
 
         if use_adoc_builder == "y":
-            assert config["runArgs"] == ["--network=alap-asciibuilder"]
+            assert config["runArgs"] == [
+                "--name=dev-python_boilerplate",
+                "--network=alap-asciibuilder",
+            ]
             assert config["containerEnv"] == {
                 "ADOC_BUILDER_URL": "http://asciibuilder:18743",
                 "ADOC_BUILDER_TOKEN": "${localEnv:ADOC_BUILDER_TOKEN}",
@@ -207,7 +232,7 @@ def test_devcontainer_adoc_builder(cookies, use_adoc_builder, use_backlog):
             assert "## Local AsciiDoc builder" in readme
             assert "docker compose up -d asciibuilder" in readme
         else:
-            assert "runArgs" not in config
+            assert config["runArgs"] == ["--name=dev-python_boilerplate"]
             assert "containerEnv" not in config
             assert "## Local AsciiDoc builder" not in readme
 

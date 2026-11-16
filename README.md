@@ -37,6 +37,16 @@ Then install dependencies in the generated project:
 uv sync --group dev
 ```
 
+## Devcontainer naming
+
+Generated devcontainers display as `<project_slug> — Python <python_version>` in
+VS Code and use the Docker container name `dev-<project_slug>`. Image naming
+remains managed by Dev Containers.
+
+Container names must be unique within a Docker daemon. To run multiple clones of
+the same project simultaneously, give each clone a distinct container name in
+`.devcontainer/devcontainer.json`.
+
 ## Local AsciiDoc builder
 
 Select `use_devcontainer=y` and `use_adoc_builder=y` to connect the generated
